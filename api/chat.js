@@ -1,9 +1,10 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-export const maxDuration = 60;
-
+// Vercel duration is configured in vercel.json for this plain Node.js API route.
 const MODELS = new Set(['gemini-3.8-flash', 'gemini-3.5-flash-lite']);
 const API_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+const REQUEST_TIMEOUT_MS = 240_000;
+const MAX_PROMPT_CHARS = 500_000;
 
 function sameSecret(a, b) {
   const x = createHash('sha256').update(a).digest();
@@ -18,6 +19,7 @@ function write(res, status, body) {
 }
 
 export default async function handler(req, res) {
+  const started = Date.now();
   if (req.method !== 'POST') return write(res, 405, { error: 'Only POST is supported.' });
   if (!process.env.GEMINI_API_KEY || !process.env.APP_PASSWORD) {
     return write(res, 503, { error: 'Server is not configured. Set GEMINI_API_KEY and APP_PASSWORD in Vercel.' });
@@ -29,8 +31,8 @@ export default async function handler(req, res) {
   }
 
   const { prompt, model, previousInteractionId } = req.body || {};
-  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 20000) {
-    return write(res, 400, { error: 'Enter a message (maximum 20,000 characters).' });
+  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > MAX_PROMPT_CHARS) {
+    return write(res, 400, { error: `Enter a message (maximum ${MAX_PROMPT_CHARS.toLocaleString()} characters).` });
   }
   if (!MODELS.has(model)) return write(res, 400, { error: 'Unknown model.' });
   if (previousInteractionId != null && (typeof previousInteractionId !== 'string' || previousInteractionId.length > 200)) {
@@ -53,7 +55,8 @@ export default async function handler(req, res) {
   };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 52000);
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  console.log('Orbit Gemini start', { model, inputChars: prompt.length });
   try {
     const upstream = await fetch(API_URL, {
       method: 'POST',
@@ -69,15 +72,16 @@ export default async function handler(req, res) {
     const raw = await upstream.text();
     let data = {};
     try { data = JSON.parse(raw); } catch { /* unexpected response */ }
+    console.log('Orbit Gemini upstream', { status: upstream.status, ms: Date.now() - started, responseBytes: raw.length });
 
     if (!upstream.ok) {
       let message = 'Gemini API returned an error.';
       const detail = typeof data?.error?.message === 'string' ? data.error.message.slice(0, 350) : '';
-      if (upstream.status === 401) message = 'Gemini rejected the API key. Create a new key in Google AI Studio.';
-      else if (upstream.status === 403) message = 'Gemini denied access. Check key permissions, model access, and API project settings.';
-      else if (upstream.status === 404) message = 'The selected Gemini model was not found for this API key. Try the other model.';
-      else if (upstream.status === 429) message = 'Gemini free-tier quota reached. Try again later or choose the Lite model.';
-      else if (upstream.status >= 500) message = 'Gemini is temporarily unavailable. Try again.';
+      if (upstream.status === 401) message = 'Gemini rejected the API key.';
+      else if (upstream.status === 403) message = 'Gemini denied access. Check model access and API project settings.';
+      else if (upstream.status === 404) message = 'The selected Gemini model was not found for this API key.';
+      else if (upstream.status === 429) message = 'Gemini quota reached. Try again later or choose the Lite model.';
+      else if (upstream.status >= 500) message = 'Gemini is temporarily unavailable.';
       return write(res, upstream.status >= 500 ? 502 : upstream.status, { error: message, detail });
     }
 
@@ -87,19 +91,22 @@ export default async function handler(req, res) {
       .filter(item => item?.type === 'text' && typeof item.text === 'string')
       .map(item => item.text).join('\n\n').trim();
 
-    if (!output) return write(res, 502, { error: 'Gemini responded but returned no text. Try another prompt.' });
+    if (!output) return write(res, 502, { error: 'Gemini responded but returned no text.' });
+    // Never silently truncate the generated ABAP program.
     return write(res, 200, {
-      reply: output.slice(0, 70000),
+      reply: output,
       interactionId: typeof data.id === 'string' ? data.id : null,
       model,
-      usage: data.usage ? { input: data.usage.total_input_tokens, output: data.usage.total_output_tokens } : null
+      usage: data.usage ? { input: data.usage.total_input_tokens, output: data.usage.total_output_tokens } : null,
+      status: data.status || 'unknown'
     });
   } catch (err) {
-    const timeoutError = err?.name === 'AbortError';
+    const timeoutError = controller.signal.aborted;
+    console.error('Orbit Gemini error', { elapsedMs: Date.now() - started, type: err?.name, cause: err?.cause?.code || null, timeoutError });
     return write(res, 502, {
       error: timeoutError
-        ? 'The Gemini API request timed out from the website server.'
-        : 'The website server could not connect to Gemini. Check deployment logs and API configuration.'
+        ? `Gemini did not finish within ${REQUEST_TIMEOUT_MS / 1000} seconds. Try a lighter model or a smaller task.`
+        : 'Orbit could not connect to Gemini. Check the Vercel function logs.'
     });
   } finally {
     clearTimeout(timeout);

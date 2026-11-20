@@ -176,7 +176,7 @@ function setBusy(next) {
 async function sendMessage(message = $input.value) {
   if (busy || !password || !String(message).trim()) { if (!password) showAuth(); return; }
   const prompt = String(message).trim();
-  if (prompt.length > 20000) { setError('Message is too long (maximum 20,000 characters).'); return; }
+  if (prompt.length > 500000) { setError('Message is too long (maximum 500,000 characters).'); return; }
   if (!active()) createThread();
   const t = active();
   t.messages.push({ role: 'user', content: prompt });
