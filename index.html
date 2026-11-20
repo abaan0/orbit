@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0d1018" />
+  <meta name="description" content="Your personal coding assistant powered by Gemini" />
+  <title>Orbit Code · Gemini-powered ABAP assistant</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">O<span>·</span></div><div><strong>ORBIT CODE</strong><small>PRIVATE WORKSPACE</small></div></div>
+      <button class="new-chat" id="newChatBtn"><span>＋</span> New conversation</button>
+      <div class="section-label">YOUR CONVERSATIONS</div>
+      <nav class="thread-list" id="threadList" aria-label="Conversations"></nav>
+      <div class="sidebar-footer"><div class="secure-dot"></div><div>Gemini API <small>via your own backend</small></div></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="top-left"><button id="menuBtn" class="icon-btn menu-btn" aria-label="Show conversations">☰</button><div class="breadcrumb"><span>Workspace</span><span class="slash">/</span><strong>AI Assistant</strong></div></div>
+        <div class="top-right"><span id="statusBadge" class="status"><i></i>Checking server</span><button id="clearBtn" class="text-btn" title="Delete current conversation">Clear chat</button></div>
+      </header>
+
+      <section class="chat-layout">
+        <div class="chat-scroll" id="chatScroll">
+          <div class="empty-state" id="emptyState">
+            <div class="orb"><span>✳</span></div>
+            <div class="eyebrow">YOUR CODING WORKSPACE</div>
+            <h1>What are we building <em>today?</em></h1>
+            <p>Your personal AI companion for ABAP, SAP BTP, programming, and everything in between.</p>
+            <div class="suggestions">
+              <button class="suggestion" data-prompt="Explain internal tables in SAP ABAP with a simple code example."><span class="suggestion-symbol">{ }</span><strong>ABAP internal tables</strong><small>Understand with an example</small></button>
+              <button class="suggestion" data-prompt="Explain the differences between classic ABAP and ABAP Cloud with examples."><span class="suggestion-symbol">▣</span><strong>ABAP Cloud vs classic</strong><small>Key differences</small></button>
+              <button class="suggestion" data-prompt="Give me a simple example of an ABAP CDS view entity and explain each line."><span class="suggestion-symbol">◇</span><strong>Explore CDS views</strong><small>Learn step by step</small></button>
+              <button class="suggestion" data-prompt="Show a simple ABAP RESTful Application Programming Model (RAP) example and explain the components."><span class="suggestion-symbol">↗</span><strong>Learn SAP RAP</strong><small>Modern development</small></button>
+            </div>
+          </div>
+          <div class="messages" id="messages" role="log" aria-live="polite"></div>
+        </div>
+
+        <div class="composer-wrap">
+          <div id="errorBox" class="error-box" role="alert" hidden></div>
+          <div class="composer">
+            <textarea id="promptInput" rows="1" placeholder="Ask anything about ABAP, code, or SAP..." aria-label="Your question"></textarea>
+            <div class="composer-bottom"><div class="model-group"><span class="sparkle">✳</span><select id="modelSelect" aria-label="Gemini model"><option value="gemini-3.8-flash">Gemini 3.8 Flash</option><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option></select><span class="model-hint">FREE TIER</span></div><button id="sendBtn" class="send-btn" aria-label="Send message" title="Send (Enter)">➜</button></div>
+          </div>
+          <p class="disclaimer">AI responses can be incorrect. Check generated code before use. Avoid uploading secrets or restricted client data.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="authOverlay" class="auth-overlay" hidden>
+    <form class="auth-panel" id="authForm">
+      <div class="auth-logo">O<span>·</span></div>
+      <div class="eyebrow">PRIVATE WORKSPACE</div>
+      <h2>Welcome to Orbit Code</h2>
+      <p>Enter the website password you set during deployment. Your Gemini API key stays on the server.</p>
+      <label for="passwordInput">WEBSITE PASSWORD</label>
+      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+      <p class="auth-error" id="authError" hidden></p>
+      <button class="auth-submit" type="submit">Open workspace →</button>
+      <small>Saved in this browser tab for the session only.</small>
+    </form>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "gemini-abap-chat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal browser-based ABAP coding assistant with Gemini API on Vercel",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "check": "node --check api/chat.js && node --check api/health.js && node --check app.js"
+  }
+}
