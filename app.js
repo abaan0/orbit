@@ -169,7 +169,7 @@ function appendMessage(msg) {
   const outer = document.createElement('article'); outer.className = `message ${msg.role}`;
   const avatar = document.createElement('div'); avatar.className = 'avatar'; avatar.textContent = msg.role === 'user' ? 'U' : '✳';
   const body = document.createElement('div'); body.className = 'message-body';
-  const name = document.createElement('div'); name.className = 'message-name'; name.textContent = msg.role === 'user' ? 'You' : 'Orbit Code · Gemini';
+  const name = document.createElement('div'); name.className = 'message-name'; name.textContent = msg.role === 'user' ? 'You' : 'Copilot · Gemini';
   const content = document.createElement('div'); content.className = 'message-text';
   if (msg.role === 'user') { const p = document.createElement('p'); p.textContent = msg.content; content.append(p); }
   else renderMarkdown(content, msg.content);
