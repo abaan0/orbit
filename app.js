@@ -71,9 +71,28 @@ function removeThread(tid) {
   render();
 }
 
+function groupForThread(time) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const created = typeof time === 'number' ? time : 0;
+  if (created >= today) return 'Today';
+  if (created >= today - 86400000) return 'Yesterday';
+  if (created >= today - 604800000) return 'Previous 7 days';
+  return 'Earlier';
+}
 function renderThreads() {
   $list.replaceChildren();
-  for (const t of threads) {
+  const filter = ($('searchChats')?.value || '').trim().toLowerCase();
+  let lastGroup = '';
+  for (const t of threads.filter(item => !filter || item.title.toLowerCase().includes(filter))) {
+    const group = groupForThread(t.created);
+    if (group !== lastGroup) {
+      const heading = document.createElement('span');
+      heading.className = 'thread-group-title';
+      heading.textContent = group;
+      $list.append(heading);
+      lastGroup = group;
+    }
     const btn = document.createElement('button');
     btn.className = 'thread-item' + (t.id === activeId ? ' active' : '');
     const icon = document.createElement('span'); icon.className = 'thread-icon'; icon.textContent = '▤';
@@ -241,6 +260,25 @@ $('authForm').addEventListener('submit', async event => {
 $('sendBtn').addEventListener('click', () => sendMessage());
 $input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
 $input.addEventListener('input', resize);
+$('searchChats').addEventListener('input', renderThreads);
+$('attachBtn').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (file.size > 400000) { setError('This text file is too large for one prompt.'); return; }
+  try {
+    const source = await file.text();
+    const kind = /\.abap$/i.test(file.name) ? 'abap' : 'text';
+    const addition = `File: ${file.name}\n\n\`\`\`${kind}\n${source}\n\`\`\``;
+    const full = [$input.value.trim(), addition].filter(Boolean).join('\n\n');
+    if (full.length > 500000) { setError('Message is too long (maximum 500,000 characters).'); return; }
+    $input.value = full;
+    setError('');
+    resize();
+    $input.focus();
+  } catch { setError('Could not read this text file.'); }
+});
 $('newChatBtn').addEventListener('click', createThread);
 $('clearBtn').addEventListener('click', () => {
   if (busy) return;

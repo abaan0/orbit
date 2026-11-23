@@ -3,24 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0d1018" />
+  <meta name="theme-color" content="#202020" />
   <meta name="description" content="Your personal coding assistant powered by Gemini" />
-  <title>Orbit Code · Gemini-powered ABAP assistant</title>
+  <title>Orbit | AI Chat</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./copilot.css" />
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="brand-mark">O<span>·</span></div><div><strong>ORBIT CODE</strong><small>PRIVATE WORKSPACE</small></div></div>
-      <button class="new-chat" id="newChatBtn"><span>＋</span> New conversation</button>
-      <div class="section-label">YOUR CONVERSATIONS</div>
+      <div class="brand"><div class="brand-mark" aria-hidden="true">✦</div><div><strong>Orbit</strong><small>AI coding assistant</small></div></div>
+      <label class="sidebar-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <input id="searchChats" type="search" placeholder="Search chats" aria-label="Search conversations" autocomplete="off" />
+      </label>
+      <button class="new-chat" id="newChatBtn"><span>＋</span> New chat</button>
+      <div class="section-label">Recent conversations</div>
       <nav class="thread-list" id="threadList" aria-label="Conversations"></nav>
       <div class="sidebar-footer"><div class="secure-dot"></div><div>Gemini API <small>via your own backend</small></div></div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <div class="top-left"><button id="menuBtn" class="icon-btn menu-btn" aria-label="Show conversations">☰</button><div class="breadcrumb"><span>Workspace</span><span class="slash">/</span><strong>AI Assistant</strong></div></div>
+        <div class="top-left"><button id="menuBtn" class="icon-btn menu-btn" aria-label="Show conversations">☰</button><div class="topbar-heading"><span class="topbar-title">Chat</span><span class="header-subtitle">Orbit AI</span></div></div>
         <div class="top-right"><span id="statusBadge" class="status"><i></i>Checking server</span><button id="clearBtn" class="text-btn" title="Delete current conversation">Clear chat</button></div>
       </header>
 
@@ -29,14 +34,8 @@
           <div class="empty-state" id="emptyState">
             <div class="orb"><span>✳</span></div>
             <div class="eyebrow">YOUR CODING WORKSPACE</div>
-            <h1>What are we building <em>today?</em></h1>
-            <p>Your personal AI companion for ABAP, SAP BTP, programming, and everything in between.</p>
-            <div class="suggestions">
-              <button class="suggestion" data-prompt="Explain internal tables in SAP ABAP with a simple code example."><span class="suggestion-symbol">{ }</span><strong>ABAP internal tables</strong><small>Understand with an example</small></button>
-              <button class="suggestion" data-prompt="Explain the differences between classic ABAP and ABAP Cloud with examples."><span class="suggestion-symbol">▣</span><strong>ABAP Cloud vs classic</strong><small>Key differences</small></button>
-              <button class="suggestion" data-prompt="Give me a simple example of an ABAP CDS view entity and explain each line."><span class="suggestion-symbol">◇</span><strong>Explore CDS views</strong><small>Learn step by step</small></button>
-              <button class="suggestion" data-prompt="Show a simple ABAP RESTful Application Programming Model (RAP) example and explain the components."><span class="suggestion-symbol">↗</span><strong>Learn SAP RAP</strong><small>Modern development</small></button>
-            </div>
+            <h1>Hi, what can I help you with?</h1>
+            <p>Ask a question, explore an idea, or work through your ABAP code.</p>
           </div>
           <div class="messages" id="messages" role="log" aria-live="polite"></div>
         </div>
@@ -44,11 +43,24 @@
         <div class="composer-wrap">
           <div id="errorBox" class="error-box" role="alert" hidden></div>
           <div class="composer">
-            <textarea id="promptInput" rows="1" placeholder="Ask anything about ABAP, code, or SAP..." aria-label="Your question"></textarea>
-            <div class="composer-bottom"><div class="model-group"><span class="sparkle">✳</span><select id="modelSelect" aria-label="Gemini model"><option value="gemini-3.8-flash">Gemini 3.8 Flash</option><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option></select><span class="model-hint">FREE TIER</span></div><button id="sendBtn" class="send-btn" aria-label="Send message" title="Send (Enter)">➜</button></div>
+            <textarea id="promptInput" rows="1" placeholder="Message Orbit" aria-label="Your question"></textarea>
+            <div class="composer-bottom">
+              <div class="composer-actions">
+                <button type="button" id="attachBtn" class="attach-btn" aria-label="Insert a text or ABAP file" title="Insert text from file">＋</button>
+                <input type="file" id="fileInput" accept=".abap,.txt,.md,.js,.json,.xml,.html,.css,.csv" hidden />
+                <div class="model-group"><span class="sparkle">✳</span><select id="modelSelect" aria-label="Gemini model"><option value="gemini-3.8-flash">Gemini 3.8 Flash</option><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option></select><span class="model-hint">FREE TIER</span></div>
+              </div>
+              <button id="sendBtn" class="send-btn" aria-label="Send message" title="Send (Enter)">↑</button>
+            </div>
           </div>
-          <p class="disclaimer">AI responses can be incorrect. Check generated code before use. Avoid uploading secrets or restricted client data.</p>
+          <p class="disclaimer">Orbit can make mistakes. Review generated code before using it. Do not share secrets or restricted client data.</p>
         </div>
+            <div class="suggestions home-suggestions" id="homeSuggestions">
+              <button class="suggestion" data-prompt="Explain internal tables in SAP ABAP with a simple code example."><span class="suggestion-symbol">{ }</span><strong>ABAP internal tables</strong><small>Understand with an example</small></button>
+              <button class="suggestion" data-prompt="Explain the differences between classic ABAP and ABAP Cloud with examples."><span class="suggestion-symbol">▣</span><strong>ABAP Cloud vs classic</strong><small>Key differences</small></button>
+              <button class="suggestion" data-prompt="Give me a simple example of an ABAP CDS view entity and explain each line."><span class="suggestion-symbol">◇</span><strong>Explore CDS views</strong><small>Learn step by step</small></button>
+              <button class="suggestion" data-prompt="Show a simple ABAP RESTful Application Programming Model (RAP) example and explain the components."><span class="suggestion-symbol">↗</span><strong>Learn SAP RAP</strong><small>Modern development</small></button>
+            </div>
       </section>
     </main>
   </div>
