@@ -147,3 +147,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-height:620px) and (min-width:851px) {
   .chat-layout:has(#emptyState:not([hidden])) {justify-content:flex-start;overflow-y:auto;padding-top:25px}
 }
+
+/* Model choices / automatic fallback */
+.model-group select{max-width:210px}
+.message-name{overflow-wrap:anywhere}

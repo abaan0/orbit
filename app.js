@@ -52,7 +52,7 @@ function setError(msg) {
 
 function createThread() {
   if (busy) return;
-  const t = { id: id(), title: 'New conversation', messages: [], model: $('modelSelect').value, interactionId: null, created: Date.now() };
+  const t = { id: id(), title: 'New conversation', messages: [], model: $('modelSelect').value, interactionId: null, keySlot: 'primary', created: Date.now() };
   threads.unshift(t);
   activeId = t.id;
   $input.value = '';
@@ -169,7 +169,7 @@ function appendMessage(msg) {
   const outer = document.createElement('article'); outer.className = `message ${msg.role}`;
   const avatar = document.createElement('div'); avatar.className = 'avatar'; avatar.textContent = msg.role === 'user' ? 'U' : '✳';
   const body = document.createElement('div'); body.className = 'message-body';
-  const name = document.createElement('div'); name.className = 'message-name'; name.textContent = msg.role === 'user' ? 'You' : 'Copilot · Gemini';
+  const name = document.createElement('div'); name.className = 'message-name'; name.textContent = msg.role === 'user' ? 'You' : `Copilot · ${msg.model || 'Gemini'}${msg.fallbackUsed ? ' (automatic fallback)' : ''}`;
   const content = document.createElement('div'); content.className = 'message-text';
   if (msg.role === 'user') { const p = document.createElement('p'); p.textContent = msg.content; content.append(p); }
   else renderMarkdown(content, msg.content);
@@ -192,6 +192,18 @@ function setBusy(next) {
   $('modelSelect').disabled = next;
   $('clearBtn').disabled = next;
 }
+function getRecentHistory(messages) {
+  // Bound the entire network payload when working with multi-thousand-line ABAP.
+  let budget = 600000;
+  const out = [];
+  for (const item of messages.slice(-30).reverse()) {
+    if (!item || typeof item.content !== 'string') continue;
+    if (item.content.length > budget) break;
+    out.unshift({ role: item.role, content: item.content });
+    budget -= item.content.length;
+  }
+  return out;
+}
 async function sendMessage(message = $input.value) {
   if (busy || !password || !String(message).trim()) { if (!password) showAuth(); return; }
   const prompt = String(message).trim();
@@ -208,12 +220,16 @@ async function sendMessage(message = $input.value) {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-app-password': password },
-      body: JSON.stringify({ prompt, model: t.model, previousInteractionId: t.interactionId })
+      body: JSON.stringify({ prompt, model: t.model, previousInteractionId: t.interactionId, previousKeySlot: t.keySlot || 'primary', history: getRecentHistory(t.messages.slice(0, -1)) })
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw Object.assign(new Error([data.error, data.detail].filter(Boolean).join(' ' ) || `HTTP ${r.status}`), { status: r.status });
     t.interactionId = data.interactionId || null;
-    t.messages.push({ role: 'assistant', content: data.reply });
+    t.keySlot = data.keySlot || 'primary';
+    t.messages.push({ role: 'assistant', content: data.reply, model: data.model, fallbackUsed: Boolean(data.fallbackUsed) });
+    if (data.fallbackUsed) toast(`Automatic fallback: ${data.model}`);
+    if (data.incomplete) setError('This answer may be incomplete. Ask the model to continue before using the code.');
+    if (data.contextDropped) setError('Some older chat context could not be sent after switching credentials. Reattach important source files if needed.');
     save();
   } catch (err) {
     if (err.status === 401) { password = ''; sessionStorage.removeItem(PASSWORD_STORE); showAuth('Website password rejected.'); }
@@ -234,7 +250,7 @@ async function checkHealth() {
   try {
     const r = await fetch('/api/health', { cache: 'no-store' });
     const data = await r.json();
-    el.textContent = data.server === 'ready' ? 'Server ready' : 'Setup required';
+    el.textContent = data.server === 'ready' ? '' : 'Setup required';
     el.className = 'status ' + (data.server === 'ready' ? 'ok' : 'bad');
     const dot = document.createElement('i'); el.prepend(dot);
   } catch { el.textContent = 'Server unavailable'; el.className = 'status bad'; const dot = document.createElement('i'); el.prepend(dot); }
@@ -285,15 +301,15 @@ $('clearBtn').addEventListener('click', () => {
   const t = active();
   if (!t) return;
   if (!confirm('Clear all messages in this conversation?')) return;
-  t.messages = []; t.interactionId = null; t.title = 'New conversation'; save(); render();
+  t.messages = []; t.interactionId = null; t.keySlot = 'primary'; t.title = 'New conversation'; save(); render();
 });
 $('modelSelect').addEventListener('change', event => {
   const t = active();
   if (t && t.model !== event.target.value) {
     t.model = event.target.value;
-    t.interactionId = null;
+    // Gemini Interactions API can continue a text conversation across Gemini models.
     save();
-    if (t.messages.length) toast('Model changed. Next reply starts a fresh model context.');
+    if (t.messages.length) toast('Model changed. Previous conversation is retained where supported.');
   }
 });
 $('menuBtn').addEventListener('click', () => $('sidebar').classList.toggle('open'));
