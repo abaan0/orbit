@@ -1,0 +1,17 @@
+/* Optional personal-only chat sync panel */
+.cloud-control{margin:12px 4px 0;display:grid;gap:7px}
+.cloud-control button{background:#282828;color:#eee;border:1px solid #414141;border-radius:8px;padding:10px 12px;text-align:left;font-size:12px;cursor:pointer}
+.cloud-control button:hover{background:#353535}
+.cloud-state{color:#aaa;font-size:10px;padding:0 7px;line-height:1.5}
+.cloud-current{background:transparent;color:#c5c5c5;border:1px solid #515151;border-radius:8px;font-size:11px;padding:7px 10px;cursor:pointer}
+.cloud-current:hover{background:#383838}
+.cloud-current[disabled]{opacity:.5;cursor:not-allowed}
+.cloud-modal-backdrop{position:fixed;inset:0;z-index:80;background:#000b;display:flex;align-items:center;justify-content:center;padding:20px}
+.cloud-modal{width:min(420px,100%);background:#222;border:1px solid #555;border-radius:16px;padding:22px;color:#eee;display:grid;gap:12px;box-shadow:0 20px 90px #0008}
+.cloud-modal h2{font-size:19px;margin:0}
+.cloud-modal p{font-size:12px;line-height:1.55;color:#bbb;margin:0}
+.cloud-modal input{background:#303030;color:#fff;border:1px solid #555;border-radius:8px;padding:12px;width:100%}
+.cloud-actions{display:flex;flex-wrap:wrap;gap:8px}
+.cloud-actions button{padding:10px 12px;border:1px solid #555;border-radius:8px;background:#353535;color:#eee;cursor:pointer}
+.cloud-actions button:first-child{background:#eee;color:#222}
+.cloud-error{color:#ffb0b0;overflow-wrap:anywhere;font-size:12px}

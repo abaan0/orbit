@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/personalChats/{chatId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['id','title','model','created','updatedAt','messages'])
+        && request.resource.data.id == chatId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.model is string
+        && request.resource.data.model.size() <= 80
+        && request.resource.data.created is int
+        && request.resource.data.updatedAt is int
+        && request.resource.data.messages is list
+        && request.resource.data.messages.size() <= 30;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
