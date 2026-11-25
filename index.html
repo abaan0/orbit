@@ -19,6 +19,9 @@
         <input id="searchChats" type="search" placeholder="Search chats" aria-label="Search conversations" autocomplete="off" />
       </label>
       <button class="new-chat" id="newChatBtn"><span>＋</span> New chat</button>
+      <button class="new-chat" onclick="location.href='./vault.html'">
+  <span>⌘</span> Code Vault
+</button>
       <div class="section-label">Recent conversations</div>
       <nav class="thread-list" id="threadList" aria-label="Conversations"></nav>
       <div class="sidebar-footer"><div class="secure-dot"></div><div>Abdurrahman<small>(work)</small></div></div>
@@ -80,7 +83,6 @@
     </form>
   </div>
   <div class="toast" id="toast" role="status" hidden></div>
-  <script type="module" src="./app.js"></script>
-  <script type="module" src="./firebase-sync.js"></script>
+  <script type="module" src="./app.js"></script>\
 </body>
 </html>
